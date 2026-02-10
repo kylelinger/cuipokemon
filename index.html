@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokemon Yellow Remake (Canvas)</title>
+    <!--
+      CC0 Art Attribution:
+      Overworld tiles are from Kenney "Tiny Town" (CC0): https://kenney.nl/assets/tiny-town
+      License file included in this repo at: assets/cc0/tiny-town/License.txt
+    -->
     <style>
-        @font-face {
-            font-family: 'PixelFont';
-            src: url('https://cdnjs.cloudflare.com/ajax/libs/vt323/1.3.0/VT323-Regular.ttf');
-        }
-
         body {
             background-color: #202020;
             display: flex;
@@ -107,6 +107,41 @@ const TILE = {
 };
 
 // --- Assets ---
+// Tile atlas (Kenney Tiny Town, 16x16)
+const TILE_ATLAS = {
+    [TILE.WALK]:  'assets/cc0/tiny-town/Tiles/tile_0000.png',
+    [TILE.GRASS]: 'assets/cc0/tiny-town/Tiles/tile_0036.png',
+    [TILE.WALL]:  'assets/cc0/tiny-town/Tiles/tile_0082.png',
+    [TILE.FLOOR]: 'assets/cc0/tiny-town/Tiles/tile_0020.png',
+    [TILE.DOOR]:  'assets/cc0/tiny-town/Tiles/tile_0108.png',
+    [TILE.SIGN]:  'assets/cc0/tiny-town/Tiles/tile_0120.png'
+};
+
+const Assets = {
+    tiles: new Map(),
+    loaded: false,
+    async preload() {
+        const entries = Object.entries(TILE_ATLAS);
+        const promises = entries.map(([tileId, src]) => new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve([Number(tileId), img]);
+            img.onerror = () => resolve([Number(tileId), null]);
+            img.src = src;
+        }));
+        const results = await Promise.all(promises);
+        results.forEach(([tileId, img]) => { if (img) this.tiles.set(tileId, img); });
+        this.loaded = true;
+    },
+    drawTile(ctx, tileId, x, y) {
+        const img = this.tiles.get(tileId);
+        if (img) {
+            ctx.drawImage(img, x, y, TILE_SIZE, TILE_SIZE);
+            return true;
+        }
+        return false;
+    }
+};
+
 const Sprites = {
     player: {
         draw: (ctx, x, y, frame, dir) => {
@@ -1142,22 +1177,27 @@ class Game {
                     py < this.camY - TILE_SIZE || py > this.camY + SCREEN_HEIGHT) continue;
                 
                 const t = map.data[y][x];
+
+                // Prefer CC0 tiles if loaded; fall back to procedural sprites.
+                const drew = Assets.loaded && Assets.drawTile(this.ctx, t, px, py);
+                if (drew) continue;
+
                 if (t === TILE.WALL) Sprites.wall(this.ctx, px, py);
                 else if (t === TILE.GRASS) {
-                    this.ctx.fillStyle = PALETTE.white; 
+                    this.ctx.fillStyle = PALETTE.white;
                     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
                     Sprites.grass(this.ctx, px, py);
                 }
                 else if (t === TILE.FLOOR) Sprites.floor(this.ctx, px, py);
                 else if (t === TILE.DOOR) Sprites.door(this.ctx, px, py);
                 else if (t === TILE.SIGN) {
-                     this.ctx.fillStyle = PALETTE.white; 
-                     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-                     Sprites.sign(this.ctx, px, py);
+                    this.ctx.fillStyle = PALETTE.white;
+                    this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    Sprites.sign(this.ctx, px, py);
                 }
                 else {
-                     this.ctx.fillStyle = PALETTE.white;
-                     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                    this.ctx.fillStyle = PALETTE.white;
+                    this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
                 }
             }
         }
@@ -1263,7 +1303,20 @@ class Game {
     }
 }
 
-window.onload = () => { new Game(); };
+window.onload = async () => {
+    // Show a simple loading screen while preloading CC0 tiles.
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#202020';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#e0f8cf';
+    ctx.font = '10px monospace';
+    ctx.fillText('Loading assets...', 30, 70);
+
+    try { await Assets.preload(); } catch (e) { /* ignore, fallback sprites still work */ }
+    new Game();
+};
 
 </script>
 </body>
