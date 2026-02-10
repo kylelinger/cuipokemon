@@ -7,7 +7,7 @@
     <style>
         @font-face {
             font-family: 'PixelFont';
-            src: url('https://cdnjs.cloudflare.com/ajax/libs/vt323/1.3.0/VT323-Regular.ttf'); /* Fallback or use a system font that looks pixelated */
+            src: url('https://cdnjs.cloudflare.com/ajax/libs/vt323/1.3.0/VT323-Regular.ttf');
         }
 
         body {
@@ -27,7 +27,7 @@
             position: relative;
             width: 480px;
             height: 432px; /* 160x144 * 3 */
-            background-color: #9bbc0f; /* Gameboy green-ish */
+            background-color: #9bbc0f;
             border: 10px solid #505050;
             border-radius: 10px 10px 40px 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
@@ -64,14 +64,13 @@
     </div>
 
     <div class="controls-hint">
-        <p>控制: <span class="key">方向键</span> 移动</p>
-        <p><span class="key">Z</span> 确定 (A) | <span class="key">X</span> 取消 (B)</p>
+        <p>控制: <span class="key">方向键</span> 移动 | <span class="key">Enter</span> 菜单</p>
+        <p><span class="key">Z</span> 确定/互动 | <span class="key">X</span> 取消/加速</p>
     </div>
 
 <script>
 /**
- * POKEMON YELLOW WEB REMAKE
- * Core Logic & Engine
+ * POKEMON YELLOW WEB REMAKE - Phase 1 Enhanced
  */
 
 // --- Constants & Config ---
@@ -79,9 +78,8 @@ const TILE_SIZE = 16;
 const SCREEN_WIDTH = 160;
 const SCREEN_HEIGHT = 144;
 const FPS = 60;
-const MOVE_SPEED = 2; // Pixels per frame
+const MOVE_SPEED = 2;
 
-// Colors (Gameboy Palette)
 const PALETTE = {
     white: "#e0f8cf",
     light: "#86c06c",
@@ -89,47 +87,38 @@ const PALETTE = {
     black: "#071821"
 };
 
-// Keys
 const KEYS = {
     UP: 'ArrowUp',
     DOWN: 'ArrowDown',
     LEFT: 'ArrowLeft',
     RIGHT: 'ArrowRight',
     A: 'z',
-    B: 'x'
+    B: 'x',
+    START: 'Enter'
 };
 
-// Map Codes
 const TILE = {
     WALK: 0,
     WALL: 1,
     GRASS: 2,
-    DOOR: 3
+    DOOR: 3,
+    FLOOR: 4,
+    SIGN: 5
 };
 
-// --- Assets (Procedural Pixel Art) ---
-// Simple 16x16 sprites represented by drawing commands or simple arrays
+// --- Assets ---
 const Sprites = {
     player: {
-        color: "#ff0000",
-        // Simple representation: Head, Body
         draw: (ctx, x, y, frame, dir) => {
             ctx.fillStyle = PALETTE.black;
-            // Shadow/Outline
-            ctx.fillRect(x+2, y+14, 12, 2);
-            
-            // Body (Red)
-            ctx.fillStyle = "#FF3333";
+            ctx.fillRect(x+2, y+14, 12, 2); // Shadow
+            ctx.fillStyle = "#FF3333"; // Body
             ctx.fillRect(x+4, y+6, 8, 8);
-            
-            // Hat (White/Red)
-            ctx.fillStyle = "#FFFFFF";
+            ctx.fillStyle = "#FFFFFF"; // Hat
             ctx.fillRect(x+4, y+2, 8, 2);
             ctx.fillStyle = "#FF0000";
             ctx.fillRect(x+4, y+4, 8, 2);
-            
-            // Legs (animation)
-            ctx.fillStyle = PALETTE.black;
+            ctx.fillStyle = PALETTE.black; // Legs
             if (frame % 20 < 10) {
                  ctx.fillRect(x+4, y+14, 3, 2);
                  ctx.fillRect(x+9, y+14, 3, 2);
@@ -140,85 +129,194 @@ const Sprites = {
         }
     },
     pikachu: {
-        color: "#ffcc00",
         draw: (ctx, x, y, frame, dir) => {
-             // Tail
-            ctx.fillStyle = "#663300";
+            ctx.fillStyle = "#663300"; // Tail
             ctx.fillRect(x+10, y+4, 4, 2);
             ctx.fillStyle = "#FFCC00"; 
             ctx.fillRect(x+10, y+6, 2, 4);
-
-            // Body
-            ctx.fillStyle = "#FFCC00";
+            ctx.fillStyle = "#FFCC00"; // Body
             ctx.fillRect(x+3, y+6, 10, 8);
-            
-            // Ears
-            ctx.fillStyle = "#000"; // Tips
+            ctx.fillStyle = "#000"; // Ears
             ctx.fillRect(x+3, y+2, 2, 2);
             ctx.fillRect(x+11, y+2, 2, 2);
             ctx.fillStyle = "#FFCC00";
             ctx.fillRect(x+3, y+4, 2, 2);
             ctx.fillRect(x+11, y+4, 2, 2);
-
-            // Cheeks
-            ctx.fillStyle = "#FF0000";
+            ctx.fillStyle = "#FF0000"; // Cheeks
             ctx.fillRect(x+4, y+9, 2, 2);
             ctx.fillRect(x+10, y+9, 2, 2);
         }
     },
+    npc: {
+        draw: (ctx, x, y, color) => {
+            ctx.fillStyle = PALETTE.black; // Shadow
+            ctx.fillRect(x+2, y+14, 12, 2);
+            ctx.fillStyle = color || "#88ccff"; // Body
+            ctx.fillRect(x+4, y+4, 8, 10);
+            ctx.fillStyle = PALETTE.white; // Face
+            ctx.fillRect(x+5, y+5, 6, 3);
+        }
+    },
     grass: (ctx, x, y) => {
-        ctx.fillStyle = "#609050"; // Darker green
+        ctx.fillStyle = "#609050";
         ctx.fillRect(x, y, 16, 16);
-        ctx.fillStyle = "#306850"; // Blades
+        ctx.fillStyle = "#306850";
         ctx.fillRect(x+2, y+4, 2, 4);
         ctx.fillRect(x+6, y+8, 2, 4);
         ctx.fillRect(x+10, y+3, 2, 4);
         ctx.fillRect(x+12, y+10, 2, 4);
     },
     wall: (ctx, x, y) => {
-        ctx.fillStyle = "#306850"; // Dark block
+        ctx.fillStyle = "#306850";
         ctx.fillRect(x, y, 16, 16);
         ctx.strokeStyle = "#071821";
         ctx.strokeRect(x, y, 16, 16);
-        // Brick pattern
         ctx.fillStyle = "#071821";
         ctx.fillRect(x, y+7, 16, 1);
         ctx.fillRect(x+7, y, 1, 7);
         ctx.fillRect(x+3, y+8, 1, 8);
     },
+    floor: (ctx, x, y) => {
+        ctx.fillStyle = "#D0D0C0";
+        ctx.fillRect(x, y, 16, 16);
+        ctx.fillStyle = "#A0A090";
+        ctx.fillRect(x+2, y+2, 12, 12);
+    },
+    door: (ctx, x, y) => {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(x, y, 16, 16);
+    },
+    sign: (ctx, x, y) => {
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(x+2, y+2, 12, 10);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(x+3, y+3, 10, 8);
+        ctx.fillStyle = "#e0f8cf";
+        ctx.fillRect(x+4, y+4, 8, 6); // Text area
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(x+7, y+12, 2, 4); // Post
+    },
     rattata: (ctx, x, y) => {
-        // Purple blob
         ctx.fillStyle = "#A040A0";
         ctx.fillRect(x+20, y+20, 40, 30);
-        // Ears
-        ctx.fillRect(x+15, y+10, 10, 15);
+        ctx.fillRect(x+15, y+10, 10, 15); // Ears
         ctx.fillRect(x+55, y+10, 10, 15);
-        // Eyes
-        ctx.fillStyle = "#FFF";
+        ctx.fillStyle = "#FFF"; // Eyes
         ctx.fillRect(x+25, y+25, 8, 8);
         ctx.fillRect(x+45, y+25, 8, 8);
         ctx.fillStyle = "#000";
         ctx.fillRect(x+27, y+27, 2, 2);
         ctx.fillRect(x+47, y+27, 2, 2);
-        // Teeth
-        ctx.fillStyle = "#FFF";
-        ctx.fillRect(x+35, y+45, 10, 5);
     },
     pikachu_back: (ctx, x, y) => {
-        // Yellow blob back
         ctx.fillStyle = "#FFCC00";
         ctx.fillRect(x+10, y+20, 40, 40);
-        // Ears
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "#000"; // Ears
         ctx.fillRect(x+5, y+5, 10, 15);
         ctx.fillRect(x+45, y+5, 10, 15);
         ctx.fillStyle = "#FFCC00";
         ctx.fillRect(x+5, y+15, 10, 10);
         ctx.fillRect(x+45, y+15, 10, 10);
-        // Tail
-        ctx.fillStyle = "#663300";
+        ctx.fillStyle = "#663300"; // Tail
         ctx.fillRect(x+50, y+30, 10, 5);
         ctx.fillRect(x+55, y+20, 10, 20);
+    }
+};
+
+// --- Map Data ---
+const MAPS = {
+    town: {
+        id: 'town',
+        width: 20, height: 20,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,4,4,4,1,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,4,4,4,1,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,4,4,4,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,1,3,1,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3], // 19,9 Exit East
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3], // 19,10 Exit East
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 5, y: 7, target: 'house', targetX: 5, targetY: 8 },
+            { x: 19, y: 9, target: 'route', targetX: 1, targetY: 9 },
+            { x: 19, y: 10, target: 'route', targetX: 1, targetY: 10 }
+        ],
+        npcs: [
+            { x: 8, y: 12, text: ["你好！", "这里是真新镇。"], color: "#88ccff" },
+            { x: 14, y: 6, text: ["小心草丛！", "可能会有野生宝可梦。"], color: "#ff8888" }
+        ],
+        signs: [
+            { x: 2, y: 9, text: ["PLAYER的家", "闲人免进"] }
+        ]
+    },
+    route: {
+        id: 'route',
+        width: 20, height: 20,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
+            [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
+            [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
+            [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 0,9 Exit West
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 0,10 Exit West
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,0,1],
+            [1,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 0, y: 9, target: 'town', targetX: 18, targetY: 9 },
+            { x: 0, y: 10, target: 'town', targetX: 18, targetY: 10 }
+        ],
+        npcs: [],
+        signs: []
+    },
+    house: {
+        id: 'house',
+        width: 10, height: 10,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,1,1,1,3,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 5, y: 8, target: 'town', targetX: 5, targetY: 8 }
+        ],
+        npcs: [
+             { x: 5, y: 4, text: ["这是我的房子。", "虽然很小，但是很温馨。"], color: "#eeeeee" }
+        ],
+        signs: []
     }
 };
 
@@ -226,7 +324,8 @@ const Sprites = {
 const STATES = {
     OVERWORLD: 0,
     BATTLE: 1,
-    MESSAGE: 2
+    DIALOGUE: 2,
+    MENU: 3
 };
 
 // --- Input Handling ---
@@ -234,44 +333,19 @@ const Input = {
     keys: {},
     lastKeys: {},
     init() {
-        window.addEventListener('keydown', e => this.keys[e.key] = true);
+        window.addEventListener('keydown', e => {
+            // Prevent default scrolling for arrow keys
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+            this.keys[e.key] = true;
+        });
         window.addEventListener('keyup', e => this.keys[e.key] = false);
     },
-    isDown(key) {
-        return !!this.keys[key];
-    },
-    isJustPressed(key) {
-        return !!this.keys[key] && !this.lastKeys[key];
-    },
-    update() {
-        this.lastKeys = { ...this.keys };
-    }
+    isDown(key) { return !!this.keys[key]; },
+    isJustPressed(key) { return !!this.keys[key] && !this.lastKeys[key]; },
+    update() { this.lastKeys = { ...this.keys }; }
 };
-
-// --- Map Data (Simple 20x20) ---
-// 1: Wall, 0: Walk, 2: Grass
-const worldMap = [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
-    [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
-    [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
-    [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,0,1],
-    [1,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
 
 // --- Classes ---
 
@@ -286,7 +360,6 @@ class Entity {
         this.isMoving = false;
         this.direction = 0; // 0: Down, 1: Up, 2: Left, 3: Right
         this.isFollower = isFollower;
-        this.moveQueue = []; // For the follower
     }
 
     update() {
@@ -296,7 +369,6 @@ class Entity {
             if (this.y < this.targetY) this.y += MOVE_SPEED;
             if (this.y > this.targetY) this.y -= MOVE_SPEED;
 
-            // Arrived
             if (Math.abs(this.x - this.targetX) < MOVE_SPEED && Math.abs(this.y - this.targetY) < MOVE_SPEED) {
                 this.x = this.targetX;
                 this.y = this.targetY;
@@ -307,26 +379,26 @@ class Entity {
         }
     }
 
-    tryMove(dx, dy) {
+    tryMove(dx, dy, map) {
         if (this.isMoving) return false;
 
         const nextGridX = this.gridX + dx;
         const nextGridY = this.gridY + dy;
 
-        // Collision Check
-        if (nextGridY < 0 || nextGridY >= worldMap.length || 
-            nextGridX < 0 || nextGridX >= worldMap[0].length) {
-            return false;
-        }
-        if (worldMap[nextGridY][nextGridX] === TILE.WALL) {
-            return false;
-        }
+        // Map Boundaries
+        if (nextGridY < 0 || nextGridY >= map.height || nextGridX < 0 || nextGridX >= map.width) return false;
+        
+        // Wall Collision
+        const tile = map.data[nextGridY][nextGridX];
+        if (tile === TILE.WALL) return false;
+
+        // NPC Collision
+        if (map.npcs.some(npc => npc.x === nextGridX && npc.y === nextGridY)) return false;
 
         this.targetX = nextGridX * TILE_SIZE;
         this.targetY = nextGridY * TILE_SIZE;
         this.isMoving = true;
         
-        // Direction
         if (dy > 0) this.direction = 0;
         if (dy < 0) this.direction = 1;
         if (dx < 0) this.direction = 2;
@@ -340,28 +412,11 @@ class BattleSystem {
     constructor(onExit) {
         this.onExit = onExit;
         this.active = false;
-        this.turn = 0; // 0: Menu, 1: Move Selection, 2: Animation, 3: Enemy Turn
+        this.turn = 0;
         this.log = "野生的小拉达出现了!";
-        
-        this.playerPoke = {
-            name: "皮卡丘",
-            maxHp: 20,
-            hp: 20,
-            lvl: 5,
-            moves: [
-                { name: "电击", pwr: 10 },
-                { name: "叫声", pwr: 0 }
-            ]
-        };
-        
-        this.enemyPoke = {
-            name: "小拉达",
-            maxHp: 15,
-            hp: 15,
-            lvl: 3
-        };
-
-        this.menuIndex = 0; // 0: Fight, 1: Run
+        this.playerPoke = { name: "皮卡丘", maxHp: 20, hp: 20, lvl: 5, moves: [{ name: "电击", pwr: 10 }, { name: "叫声", pwr: 0 }] };
+        this.enemyPoke = { name: "小拉达", maxHp: 15, hp: 15, lvl: 3 };
+        this.menuIndex = 0;
         this.fightIndex = 0;
     }
 
@@ -371,8 +426,6 @@ class BattleSystem {
         this.log = "野生的小拉达出现了!";
         this.enemyPoke.hp = this.enemyPoke.maxHp;
         this.menuIndex = 0;
-        
-        // Flash effect would go here
     }
 
     update() {
@@ -380,23 +433,14 @@ class BattleSystem {
             if (Input.isJustPressed(KEYS.RIGHT)) this.menuIndex = 1;
             if (Input.isJustPressed(KEYS.LEFT)) this.menuIndex = 0;
             if (Input.isJustPressed(KEYS.A)) {
-                if (this.menuIndex === 0) {
-                    this.turn = 1; // Fight
-                    this.fightIndex = 0;
-                } else {
-                    // Run
-                    this.log = "安全逃离!";
-                    this.turn = 4; // End
-                    setTimeout(() => this.exitBattle(), 1000);
-                }
+                if (this.menuIndex === 0) { this.turn = 1; this.fightIndex = 0; } 
+                else { this.log = "安全逃离!"; this.turn = 4; setTimeout(() => this.exitBattle(), 1000); }
             }
         } else if (this.turn === 1) { // Fight Menu
             if (Input.isJustPressed(KEYS.DOWN)) this.fightIndex = Math.min(this.fightIndex + 1, this.playerPoke.moves.length - 1);
             if (Input.isJustPressed(KEYS.UP)) this.fightIndex = Math.max(this.fightIndex - 1, 0);
-            if (Input.isJustPressed(KEYS.B)) this.turn = 0; // Back
-            if (Input.isJustPressed(KEYS.A)) {
-                this.executePlayerMove();
-            }
+            if (Input.isJustPressed(KEYS.B)) this.turn = 0;
+            if (Input.isJustPressed(KEYS.A)) this.executePlayerMove();
         }
     }
 
@@ -404,134 +448,76 @@ class BattleSystem {
         const move = this.playerPoke.moves[this.fightIndex];
         this.turn = 2;
         this.log = `皮卡丘 使用了 ${move.name}!`;
-        
-        // Simple damage logic
         setTimeout(() => {
             if (move.pwr > 0) {
                 const dmg = Math.floor(Math.random() * 3) + 3;
                 this.enemyPoke.hp = Math.max(0, this.enemyPoke.hp - dmg);
-            } else {
-                this.log = "小拉达 的攻击力下降了!";
-            }
+            } else this.log = "小拉达 的攻击力下降了!";
 
             if (this.enemyPoke.hp <= 0) {
-                setTimeout(() => {
-                    this.log = "野生的小拉达 倒下了!";
-                    setTimeout(() => this.exitBattle(), 1500);
-                }, 1000);
-            } else {
-                setTimeout(() => this.executeEnemyMove(), 1500);
-            }
+                setTimeout(() => { this.log = "野生的小拉达 倒下了!"; setTimeout(() => this.exitBattle(), 1500); }, 1000);
+            } else setTimeout(() => this.executeEnemyMove(), 1500);
         }, 1000);
     }
 
     executeEnemyMove() {
         this.turn = 3;
         this.log = "野生的小拉达 使用了 撞击!";
-        
         setTimeout(() => {
             const dmg = Math.floor(Math.random() * 2) + 1;
             this.playerPoke.hp = Math.max(0, this.playerPoke.hp - dmg);
-            
             if (this.playerPoke.hp <= 0) {
-                 this.log = "皮卡丘 倒下了! 你眼前一黑...";
-                 setTimeout(() => {
-                     // Heal and exit
-                     this.playerPoke.hp = this.playerPoke.maxHp;
-                     this.exitBattle();
-                 }, 2000);
-            } else {
-                setTimeout(() => {
-                    this.turn = 0;
-                    this.log = "要做什么?";
-                }, 1000);
-            }
+                 this.log = "皮卡丘 倒下了!";
+                 setTimeout(() => { this.playerPoke.hp = this.playerPoke.maxHp; this.exitBattle(); }, 2000);
+            } else setTimeout(() => { this.turn = 0; this.log = "要做什么?"; }, 1000);
         }, 1000);
     }
 
-    exitBattle() {
-        this.active = false;
-        this.onExit();
-    }
+    exitBattle() { this.active = false; this.onExit(); }
 
     draw(ctx) {
-        // Background
         ctx.fillStyle = PALETTE.white;
         ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-        // Enemy Info (Top Left)
         this.drawStatus(ctx, 10, 10, this.enemyPoke);
-        
-        // Enemy Sprite (Top Right)
         Sprites.rattata(ctx, 100, 10);
-
-        // Player Sprite (Bottom Left)
         Sprites.pikachu_back(ctx, 10, 60);
-
-        // Player Info (Bottom Right)
         this.drawStatus(ctx, 80, 70, this.playerPoke, true);
-
-        // Text Box / Menu area
+        
         ctx.fillStyle = PALETTE.black;
         ctx.fillRect(0, 104, SCREEN_WIDTH, 40);
         ctx.fillStyle = PALETTE.white;
         ctx.fillRect(2, 106, SCREEN_WIDTH-4, 36);
-
-        // Draw Text or Menu
         ctx.fillStyle = PALETTE.black;
         ctx.font = "10px 'Courier New'";
         
         if (this.turn === 0) {
-            // Main Menu
             ctx.fillText(this.log, 10, 120);
-            
-            // Selection Box
-            ctx.fillStyle = PALETTE.white;
             ctx.fillRect(80, 104, 80, 40);
-            ctx.strokeStyle = PALETTE.black;
-            ctx.strokeRect(80, 104, 79, 39);
-            
+            ctx.fillStyle = PALETTE.white;
+            ctx.fillRect(81, 105, 78, 38);
             ctx.fillStyle = PALETTE.black;
             ctx.fillText("战斗", 95, 120);
             ctx.fillText("逃跑", 135, 120);
-            
-            // Cursor
-            const cursorX = this.menuIndex === 0 ? 88 : 128;
-            ctx.fillText(">", cursorX, 120);
-
+            ctx.fillText(">", this.menuIndex === 0 ? 88 : 128, 120);
         } else if (this.turn === 1) {
-            // Fight Menu
-            const m1 = this.playerPoke.moves[0];
-            const m2 = this.playerPoke.moves[1];
-            ctx.fillText(`${m1.name}`, 20, 120);
-            if (m2) ctx.fillText(`${m2.name}`, 20, 132);
-            
-            ctx.fillText(">", 10, 120 + (this.fightIndex * 12));
-            ctx.fillText(`PP 10/10`, 100, 120);
-            ctx.fillText(`TYPE/ELEC`, 100, 130);
-        } else {
-            // Log messages
-            ctx.fillText(this.log, 10, 125);
-        }
+             const m1 = this.playerPoke.moves[0];
+             const m2 = this.playerPoke.moves[1];
+             ctx.fillText(`${m1.name}`, 20, 120);
+             if (m2) ctx.fillText(`${m2.name}`, 20, 132);
+             ctx.fillText(">", 10, 120 + (this.fightIndex * 12));
+             ctx.fillText(`PP 10/10`, 100, 120);
+        } else ctx.fillText(this.log, 10, 125);
     }
 
-    drawStatus(ctx, x, y, poke, showNum = false) {
+    drawStatus(ctx, x, y, poke, showNum) {
         ctx.fillStyle = PALETTE.black;
         ctx.fillText(poke.name, x, y);
         ctx.fillText(":L" + poke.lvl, x + 50, y);
-        
-        // HP Bar Border
         ctx.strokeRect(x, y + 5, 60, 4);
-        
-        // HP Bar Fill
         const pct = poke.hp / poke.maxHp;
         ctx.fillStyle = pct > 0.5 ? "#50C050" : pct > 0.2 ? "#F0C030" : "#F04040";
         ctx.fillRect(x + 1, y + 6, 58 * pct, 2);
-
-        if (showNum) {
-            ctx.fillStyle = PALETTE.black;
-            ctx.fillText(`${poke.hp}/${poke.maxHp}`, x + 20, y + 18);
-        }
+        if (showNum) { ctx.fillStyle = PALETTE.black; ctx.fillText(`${poke.hp}/${poke.maxHp}`, x + 20, y + 18); }
     }
 }
 
@@ -540,55 +526,107 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.ctx.imageSmoothingEnabled = false;
-        
         Input.init();
 
-        this.player = new Entity(4, 4);
-        this.pikachu = new Entity(4, 5, true);
+        // State
+        this.currentMapId = 'town';
+        this.currentMap = MAPS['town'];
         
-        // Pikachu initially faces player
+        this.player = new Entity(10, 10);
+        this.pikachu = new Entity(10, 11, true);
         this.pikachu.direction = 1; 
 
         this.gameState = STATES.OVERWORLD;
-        this.battle = new BattleSystem(() => {
-            this.gameState = STATES.OVERWORLD;
-        });
+        this.battle = new BattleSystem(() => { this.gameState = STATES.OVERWORLD; });
 
-        this.frameCount = 0;
+        // Dialogue
+        this.dialogueQueue = [];
+        this.currentText = "";
+        this.targetText = "";
+        this.charIndex = 0;
+        this.textSpeed = 1;
+        this.textTimer = 0;
+
+        // Menu
+        this.menuOptions = ["队伍", "背包", "保存", "关闭"];
+        this.menuIndex = 0;
+
+        // Camera
         this.camX = 0;
         this.camY = 0;
 
-        // Loop
+        // Load
+        this.loadGame();
+
         this.lastTime = 0;
         this.loop = this.loop.bind(this);
         requestAnimationFrame(this.loop);
     }
 
+    loadGame() {
+        const save = localStorage.getItem('pokemon_canvas_save');
+        if (save) {
+            const data = JSON.parse(save);
+            this.currentMapId = data.mapId;
+            this.currentMap = MAPS[data.mapId];
+            this.player.x = data.x;
+            this.player.y = data.y;
+            this.player.gridX = Math.round(data.x / TILE_SIZE);
+            this.player.gridY = Math.round(data.y / TILE_SIZE);
+            this.player.targetX = this.player.x;
+            this.player.targetY = this.player.y;
+            // Reset pikachu
+            this.pikachu.x = this.player.x;
+            this.pikachu.y = this.player.y + 16;
+            this.pikachu.gridX = this.player.gridX;
+            this.pikachu.gridY = this.player.gridY + 1;
+            this.pikachu.targetX = this.pikachu.x;
+            this.pikachu.targetY = this.pikachu.y;
+        }
+    }
+
+    saveGame() {
+        const data = {
+            mapId: this.currentMapId,
+            x: this.player.x,
+            y: this.player.y
+        };
+        localStorage.setItem('pokemon_canvas_save', JSON.stringify(data));
+        this.showDialogue(["游戏已保存。"]);
+    }
+
     loop(timestamp) {
         const dt = timestamp - this.lastTime;
         this.lastTime = timestamp;
-
         this.update();
         this.draw();
-        
         Input.update();
-        this.frameCount++;
         requestAnimationFrame(this.loop);
     }
 
     update() {
-        if (this.gameState === STATES.OVERWORLD) {
-            this.updateOverworld();
-        } else if (this.gameState === STATES.BATTLE) {
-            this.battle.update();
-        }
+        if (this.gameState === STATES.OVERWORLD) this.updateOverworld();
+        else if (this.gameState === STATES.BATTLE) this.battle.update();
+        else if (this.gameState === STATES.DIALOGUE) this.updateDialogue();
+        else if (this.gameState === STATES.MENU) this.updateMenu();
     }
 
     updateOverworld() {
-        // Player Movement Input
-        let dx = 0;
-        let dy = 0;
+        // Open Menu
+        if (Input.isJustPressed(KEYS.START)) {
+            this.gameState = STATES.MENU;
+            this.menuIndex = 0;
+            return;
+        }
 
+        // Interaction
+        if (Input.isJustPressed(KEYS.A)) {
+            this.checkInteraction();
+            return;
+        }
+
+        // Movement
+        let dx = 0, dy = 0;
         if (!this.player.isMoving) {
             if (Input.isDown(KEYS.UP)) dy = -1;
             else if (Input.isDown(KEYS.DOWN)) dy = 1;
@@ -596,34 +634,27 @@ class Game {
             else if (Input.isDown(KEYS.RIGHT)) dx = 1;
 
             if (dx !== 0 || dy !== 0) {
-                // Record previous pos for Pikachu
                 const prevX = this.player.gridX;
                 const prevY = this.player.gridY;
                 
-                if (this.player.tryMove(dx, dy)) {
-                    // If player moved successfully, tell Pikachu to move to where player was
+                if (this.player.tryMove(dx, dy, this.currentMap)) {
+                    // Move Pikachu
                     this.pikachu.targetX = prevX * TILE_SIZE;
                     this.pikachu.targetY = prevY * TILE_SIZE;
                     this.pikachu.gridX = prevX;
                     this.pikachu.gridY = prevY;
                     this.pikachu.isMoving = true;
-                    
-                    // Calc Pikachu direction
-                    if (this.player.gridY < prevY) this.pikachu.direction = 1; // Up
-                    if (this.player.gridY > prevY) this.pikachu.direction = 0; // Down
-                    if (this.player.gridX < prevX) this.pikachu.direction = 2; // Left
-                    if (this.player.gridX > prevX) this.pikachu.direction = 3; // Right
+                    if (this.player.gridY < prevY) this.pikachu.direction = 1;
+                    if (this.player.gridY > prevY) this.pikachu.direction = 0;
+                    if (this.player.gridX < prevX) this.pikachu.direction = 2;
+                    if (this.player.gridX > prevX) this.pikachu.direction = 3;
 
-                    // Grass Encounter Check
-                    if (worldMap[this.player.gridY][this.player.gridX] === TILE.GRASS) {
-                        if (Math.random() < 0.15) { // 15% chance
-                            // Stop movement immediately for visual effect? 
-                            // Or wait until finished. Let's wait.
-                            this.triggerBattleNext = true;
-                        }
+                    // Grass Check
+                    if (this.currentMap.data[this.player.gridY][this.player.gridX] === TILE.GRASS) {
+                        if (Math.random() < 0.15) this.triggerBattleNext = true;
                     }
                 } else {
-                    // Turn in place
+                    // Turn
                     if (dy > 0) this.player.direction = 0;
                     if (dy < 0) this.player.direction = 1;
                     if (dx < 0) this.player.direction = 2;
@@ -635,28 +666,130 @@ class Game {
         this.player.update();
         this.pikachu.update();
 
-        // Check for battle trigger AFTER movement finishes
+        // Portal Check
+        if (!this.player.isMoving && !this.triggerBattleNext) {
+            const portal = this.currentMap.portals.find(p => p.x === this.player.gridX && p.y === this.player.gridY);
+            if (portal) this.switchMap(portal);
+        }
+
         if (this.triggerBattleNext && !this.player.isMoving) {
             this.triggerBattleNext = false;
             this.gameState = STATES.BATTLE;
             this.battle.start();
         }
 
-        // Camera Follow
+        this.updateCamera();
+    }
+
+    updateCamera() {
         const targetCamX = this.player.x - SCREEN_WIDTH / 2 + TILE_SIZE / 2;
         const targetCamY = this.player.y - SCREEN_HEIGHT / 2 + TILE_SIZE / 2;
-        
-        // Simple Lerp
         this.camX += (targetCamX - this.camX) * 0.1;
         this.camY += (targetCamY - this.camY) * 0.1;
+        this.camX = Math.max(0, Math.min(this.camX, (this.currentMap.width * TILE_SIZE) - SCREEN_WIDTH));
+        this.camY = Math.max(0, Math.min(this.camY, (this.currentMap.height * TILE_SIZE) - SCREEN_HEIGHT));
+    }
 
-        // Clamp Camera
-        this.camX = Math.max(0, Math.min(this.camX, (worldMap[0].length * TILE_SIZE) - SCREEN_WIDTH));
-        this.camY = Math.max(0, Math.min(this.camY, (worldMap.length * TILE_SIZE) - SCREEN_HEIGHT));
+    switchMap(portal) {
+        this.currentMapId = portal.target;
+        this.currentMap = MAPS[portal.target];
+        this.player.gridX = portal.targetX;
+        this.player.gridY = portal.targetY;
+        this.player.x = portal.targetX * TILE_SIZE;
+        this.player.y = portal.targetY * TILE_SIZE;
+        this.player.targetX = this.player.x;
+        this.player.targetY = this.player.y;
+        
+        // Reset Pikachu nearby
+        this.pikachu.gridX = portal.targetX;
+        this.pikachu.gridY = portal.targetY; 
+        this.pikachu.x = this.player.x;
+        this.pikachu.y = this.player.y;
+        this.pikachu.targetX = this.pikachu.x;
+        this.pikachu.targetY = this.pikachu.y;
+        this.pikachu.isMoving = false;
+        
+        this.camX = this.player.x - SCREEN_WIDTH/2; 
+        this.camY = this.player.y - SCREEN_HEIGHT/2;
+    }
+
+    checkInteraction() {
+        const dx = [0, 0, -1, 1][this.player.direction];
+        const dy = [1, -1, 0, 0][this.player.direction];
+        const tx = this.player.gridX + dx;
+        const ty = this.player.gridY + dy;
+
+        // Check NPCs
+        const npc = this.currentMap.npcs.find(n => n.x === tx && n.y === ty);
+        if (npc) {
+            this.showDialogue(npc.text);
+            return;
+        }
+
+        // Check Signs
+        const sign = this.currentMap.signs.find(s => s.x === tx && s.y === ty);
+        if (sign) {
+            this.showDialogue(sign.text);
+            return;
+        }
+    }
+
+    showDialogue(lines) {
+        this.dialogueQueue = [...lines];
+        this.gameState = STATES.DIALOGUE;
+        this.nextDialogueLine();
+    }
+
+    nextDialogueLine() {
+        if (this.dialogueQueue.length === 0) {
+            this.gameState = STATES.OVERWORLD;
+            return;
+        }
+        this.targetText = this.dialogueQueue.shift();
+        this.currentText = "";
+        this.charIndex = 0;
+    }
+
+    updateDialogue() {
+        if (Input.isJustPressed(KEYS.B)) this.textSpeed = 3; // Speed up
+        else this.textSpeed = 1;
+
+        if (this.charIndex < this.targetText.length) {
+            this.textTimer += this.textSpeed;
+            if (this.textTimer >= 2) {
+                this.charIndex++;
+                this.currentText = this.targetText.substring(0, this.charIndex);
+                this.textTimer = 0;
+            }
+        } else {
+            // Wait for input
+            if (Input.isJustPressed(KEYS.A)) {
+                this.nextDialogueLine();
+            }
+        }
+    }
+
+    updateMenu() {
+        if (Input.isJustPressed(KEYS.B)) {
+            this.gameState = STATES.OVERWORLD;
+        }
+        if (Input.isJustPressed(KEYS.UP)) this.menuIndex = Math.max(0, this.menuIndex - 1);
+        if (Input.isJustPressed(KEYS.DOWN)) this.menuIndex = Math.min(this.menuOptions.length - 1, this.menuIndex + 1);
+        
+        if (Input.isJustPressed(KEYS.A)) {
+            const selection = this.menuOptions[this.menuIndex];
+            if (selection === "关闭") this.gameState = STATES.OVERWORLD;
+            else if (selection === "保存") {
+                this.saveGame();
+            }
+            else {
+                // Placeholder
+                this.showDialogue([`${selection} 功能尚未开放。`]);
+            }
+        }
     }
 
     draw() {
-        // Clear
         this.ctx.fillStyle = PALETTE.black;
         this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -668,23 +801,28 @@ class Game {
         this.ctx.save();
         this.ctx.translate(-Math.floor(this.camX), -Math.floor(this.camY));
 
-        // Draw Map
-        for (let y = 0; y < worldMap.length; y++) {
-            for (let x = 0; x < worldMap[0].length; x++) {
-                const t = worldMap[y][x];
+        // Map
+        const map = this.currentMap;
+        for (let y = 0; y < map.height; y++) {
+            for (let x = 0; x < map.width; x++) {
                 const px = x * TILE_SIZE;
                 const py = y * TILE_SIZE;
-
-                // Optimization: cull off-screen
                 if (px < this.camX - TILE_SIZE || px > this.camX + SCREEN_WIDTH ||
                     py < this.camY - TILE_SIZE || py > this.camY + SCREEN_HEIGHT) continue;
-
+                
+                const t = map.data[y][x];
                 if (t === TILE.WALL) Sprites.wall(this.ctx, px, py);
                 else if (t === TILE.GRASS) {
-                    // Draw base grass color
                     this.ctx.fillStyle = PALETTE.white; 
                     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
                     Sprites.grass(this.ctx, px, py);
+                }
+                else if (t === TILE.FLOOR) Sprites.floor(this.ctx, px, py);
+                else if (t === TILE.DOOR) Sprites.door(this.ctx, px, py);
+                else if (t === TILE.SIGN) {
+                     this.ctx.fillStyle = PALETTE.white; 
+                     this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                     Sprites.sign(this.ctx, px, py);
                 }
                 else {
                      this.ctx.fillStyle = PALETTE.white;
@@ -693,22 +831,62 @@ class Game {
             }
         }
 
-        // Draw Entities (Sort by Y for simple depth)
-        const entities = [this.player, this.pikachu].sort((a,b) => a.y - b.y);
-        
-        entities.forEach(e => {
-            if (e === this.player) Sprites.player.draw(this.ctx, e.x, e.y, this.frameCount, e.direction);
-            else Sprites.pikachu.draw(this.ctx, e.x, e.y, this.frameCount, e.direction);
+        // NPCs
+        map.npcs.forEach(n => Sprites.npc.draw(this.ctx, n.x * TILE_SIZE, n.y * TILE_SIZE, n.color));
+
+        // Entities
+        [this.player, this.pikachu].sort((a,b) => a.y - b.y).forEach(e => {
+            if (e === this.player) Sprites.player.draw(this.ctx, e.x, e.y, this.frameCount || 0, e.direction);
+            else Sprites.pikachu.draw(this.ctx, e.x, e.y, this.frameCount || 0, e.direction);
         });
 
         this.ctx.restore();
+
+        // UI Layer
+        if (this.gameState === STATES.DIALOGUE) this.drawDialogue();
+        if (this.gameState === STATES.MENU) this.drawMenu();
+    }
+
+    drawDialogue() {
+        this.ctx.fillStyle = PALETTE.black;
+        this.ctx.fillRect(0, 104, SCREEN_WIDTH, 40);
+        this.ctx.fillStyle = PALETTE.white;
+        this.ctx.fillRect(2, 106, SCREEN_WIDTH-4, 36);
+        this.ctx.fillStyle = PALETTE.black;
+        this.ctx.font = "10px 'Courier New'";
+        this.ctx.fillText(this.currentText, 10, 120);
+        
+        if (this.charIndex >= this.targetText.length) {
+            // Blink arrow
+            if (Math.floor(Date.now() / 500) % 2 === 0) {
+                 this.ctx.fillText("▼", 145, 135);
+            }
+        }
+    }
+
+    drawMenu() {
+        const boxW = 60;
+        const boxH = this.menuOptions.length * 12 + 10;
+        const startX = SCREEN_WIDTH - boxW - 2;
+        const startY = 2;
+
+        this.ctx.fillStyle = PALETTE.white;
+        this.ctx.fillRect(startX, startY, boxW, boxH);
+        this.ctx.strokeStyle = PALETTE.black;
+        this.ctx.strokeRect(startX, startY, boxW, boxH);
+        
+        this.ctx.fillStyle = PALETTE.black;
+        this.ctx.font = "10px 'Courier New'";
+        
+        this.menuOptions.forEach((opt, i) => {
+            this.ctx.fillText(opt, startX + 15, startY + 12 + (i * 12));
+        });
+
+        this.ctx.fillText(">", startX + 5, startY + 12 + (this.menuIndex * 12));
     }
 }
 
-// Start Game
-window.onload = () => {
-    const game = new Game();
-};
+window.onload = () => { new Game(); };
 
 </script>
 </body>
