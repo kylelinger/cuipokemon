@@ -1,1 +1,21 @@
+# macOS
+.DS_Store
+
+# Vercel
 .vercel
+
+# CC0 asset staging (keep only the subset we actually use)
+assets/cc0/kenney_tiny-town.zip
+assets/cc0/tiny-town/Preview.png
+assets/cc0/tiny-town/Sample.png
+assets/cc0/tiny-town/Tilemap/
+assets/cc0/tiny-town/Tiles/*.png
+!assets/cc0/tiny-town/Tiles/tile_0000.png
+!assets/cc0/tiny-town/Tiles/tile_0020.png
+!assets/cc0/tiny-town/Tiles/tile_0036.png
+!assets/cc0/tiny-town/Tiles/tile_0082.png
+!assets/cc0/tiny-town/Tiles/tile_0108.png
+!assets/cc0/tiny-town/Tiles/tile_0120.png
+
+# keep license text
+!assets/cc0/tiny-town/License.txt
