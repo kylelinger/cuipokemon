@@ -29,6 +29,7 @@
 ### 2026-02-10
 - Deployed NPC sprite fix + z-order + sign collision.
 - Deployed CC0 Kenney Tiny Town overworld tiles (preload + loading) and removed external font.
+- Added PROGRESS.md (this file) and committed to repo.
 
 ## Next Tasks (planned)
 1. Add Town2/Route2 with new quests
