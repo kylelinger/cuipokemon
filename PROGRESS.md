@@ -29,6 +29,7 @@
 - Added Town2, Route2, Dungeon1 maps.
 - Added Shop system (buy items) and Money.
 - Added Quest Board system.
+- Bugfix: restored JS execution by properly closing the `MAPS` object (was causing green-screen).
 - Deployed NPC sprite fix + z-order + sign collision.
 - Deployed CC0 Kenney Tiny Town overworld tiles (preload + loading).
 - Added PROGRESS.md (this file) and committed to repo.
