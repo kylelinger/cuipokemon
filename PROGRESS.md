@@ -8,27 +8,29 @@
 
 ## Current Status (as of 2026-02-10)
 ### Shipped
-- Overworld: Town/Route/House maps + portals (door/exit)
-- NPC interaction: 2 NPC dialogues + 1 sign
+- Overworld: Town1/Route1/Town2/Route2/Dungeon1 maps
+- NPC interaction: dialogue + quest board + shop NPC
 - Dialogue UI: typewriter text, Z to continue, X to speed/skip
-- Start menu (Enter): Party/Bag/Save/Close (party/bag basic)
-- Save/load via localStorage (position + basic state)
+- Start menu (Enter): Party/Bag/Save/Close
+- Save/load via localStorage (position, team, bag, money, quests)
 - Battle loop: Fight/Bag/Run, simple moves + status, bag items
 - Capture loop: Ball + shake animation + team add (up to 6)
-- 10-min demo quest loop: NPC gives 3 balls -> catch 1 -> return -> reward + “Demo Completed!”
-- Fixes: distinct NPC sprites + z-order sorting + sign collision
-- Visual upgrade: CC0 Kenney Tiny Town tile loader (overworld tiles) + loading screen; removed external font CDN
+- Economy: Money system + Shop (buy balls/potions)
+- Quests: Quest board with tracking
+- Visual upgrade: CC0 Kenney Tiny Town tile loader + loading screen
 
 ### In Progress (next)
-- Expand world to “1 hour”: Town2 + Route2 + Dungeon1
-- Add quest chain (main + side quests), shop/economy
 - Upgrade battle depth + more monsters/moves
-- Visual upgrade phase 2: replace character sprites with CC0 Q-style sprites (still CC0)
+- Visual upgrade phase 2: replace character sprites with CC0 Q-style sprites
+- Boss fight mechanics
 
 ## Changelog
 ### 2026-02-10
+- Added Town2, Route2, Dungeon1 maps.
+- Added Shop system (buy items) and Money.
+- Added Quest Board system.
 - Deployed NPC sprite fix + z-order + sign collision.
-- Deployed CC0 Kenney Tiny Town overworld tiles (preload + loading) and removed external font.
+- Deployed CC0 Kenney Tiny Town overworld tiles (preload + loading).
 - Added PROGRESS.md (this file) and committed to repo.
 
 ## Next Tasks (planned)
