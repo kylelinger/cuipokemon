@@ -583,7 +583,9 @@ const MOVES = {
     vinewhip: { name: '藤鞭', type: 'grass', pwr: 45, acc: 100, pp: 25 },
     gust: { name: '起风', type: 'flying', pwr: 40, acc: 100, pp: 35 },
     poisonsting: { name: '毒针', type: 'poison', pwr: 15, acc: 100, pp: 35, effect: 'status', status: 'psn', chance: 0.3 },
-    stringshot: { name: '吐丝', type: 'bug', pwr: 0, acc: 95, pp: 40, effect: 'stat', stat: 'spd', change: -1 }
+    stringshot: { name: '吐丝', type: 'bug', pwr: 0, acc: 95, pp: 40, effect: 'stat', stat: 'spd', change: -1 },
+    screech: { name: '刺耳声', type: 'normal', pwr: 0, acc: 85, pp: 40, effect: 'stat', stat: 'def', change: -2 },
+    rockthrow: { name: '落石', type: 'rock', pwr: 50, acc: 90, pp: 15 }
 };
 
 const MONSTERS = {
@@ -609,7 +611,9 @@ function createPokemon(id, level) {
         atk: Math.floor((2 * base.atk * level) / 100 + 5),
         def: Math.floor((2 * base.def * level) / 100 + 5),
         spd: Math.floor((2 * base.spd * level) / 100 + 5),
-        moves: base.moves.slice(0, 4).map(m => ({ ...MOVES[m], ppLeft: MOVES[m].pp })),
+        moves: base.moves.slice(0, 4)
+            .map(m => MOVES[m] ? ({ ...MOVES[m], ppLeft: MOVES[m].pp }) : null)
+            .filter(Boolean),
         exp: LEVEL_RATE(level),
         nextExp: LEVEL_RATE(level + 1),
         status: null
@@ -804,6 +808,7 @@ class BattleSystem {
 
     executeTurn(playerMove) {
         this.turn = 4;
+        const max = (a,b)=>a>b?a:b;
         const enemyMove = this.enemyPoke.moves[Math.floor(Math.random() * this.enemyPoke.moves.length)];
         let first = this.playerPoke;
         let second = this.enemyPoke;
@@ -822,9 +827,39 @@ class BattleSystem {
              move2 = playerMove;
         }
 
+        const applyPreMoveStatus = (attacker) => {
+            if (!attacker.status) return { canAct: true, msg: null };
+            if (attacker.status === 'par') {
+                if (Math.random() < 0.25) return { canAct: false, msg: `${attacker.name} 麻痹了! 动不了!` };
+            }
+            return { canAct: true, msg: null };
+        };
+
+        const applyStatusEndTurn = (poke) => {
+            if (!poke.status || poke.hp <= 0) return null;
+            if (poke.status === 'psn') {
+                const dmg = max(1, Math.floor(poke.maxHp / 8));
+                poke.hp = max(0, poke.hp - dmg);
+                return `${poke.name} 因中毒受到了伤害!`;
+            }
+            if (poke.status === 'brn') {
+                const dmg = max(1, Math.floor(poke.maxHp / 16));
+                poke.hp = max(0, poke.hp - dmg);
+                return `${poke.name} 被灼伤了!`;
+            }
+            return null;
+        };
+
         const runMove = (attacker, defender, move, next) => {
             if (!move) { next(); return; }
             if (attacker.hp <= 0) { next(); return; }
+
+            const pre = applyPreMoveStatus(attacker);
+            if (!pre.canAct) {
+                this.log = pre.msg;
+                setTimeout(next, 900);
+                return;
+            }
 
             this.log = `${attacker.name} 使用 ${move.name}!`;
             if (move.ppLeft !== undefined) move.ppLeft--;
@@ -837,7 +872,8 @@ class BattleSystem {
                 }
 
                 if (move.pwr > 0) {
-                    let dmg = Math.floor((((2 * attacker.level / 5 + 2) * move.pwr * (attacker.atk / defender.def)) / 50) + 2);
+                    const atkStat = attacker.status === 'brn' ? Math.max(1, Math.floor(attacker.atk * 0.5)) : attacker.atk;
+                    let dmg = Math.floor((((2 * attacker.level / 5 + 2) * move.pwr * (atkStat / defender.def)) / 50) + 2);
                     if (Math.random() < 0.0625) { dmg *= 1.5; this.log += " 击中要害!"; }
                     defender.hp = Math.max(0, defender.hp - dmg);
                     this.flash = 10;
@@ -847,6 +883,7 @@ class BattleSystem {
                 } else if (move.effect === 'status') {
                     if (!defender.status && Math.random() < move.chance) {
                          defender.status = move.status;
+                         if (move.status === 'par') defender.spd = Math.max(1, Math.floor(defender.spd * 0.5));
                          this.log = `${defender.name} 陷入了异常状态!`;
                     }
                 }
@@ -869,15 +906,35 @@ class BattleSystem {
 
         runMove(first, second, move1, () => {
              runMove(second, first, move2, () => {
+                 // End-of-turn status damage (poison/burn)
+                 const msgs = [applyStatusEndTurn(this.playerPoke), applyStatusEndTurn(this.enemyPoke)].filter(Boolean);
+                 if (msgs.length) {
+                     this.log = msgs[0];
+                     if (this.playerPoke.hp <= 0) {
+                         setTimeout(() => { this.log = '眼前一黑...'; setTimeout(() => this.exitBattle(), 900); }, 900);
+                         return;
+                     }
+                     if (this.enemyPoke.hp <= 0) {
+                         setTimeout(() => this.gainExp(), 900);
+                         return;
+                     }
+                     setTimeout(() => {
+                         this.turn = 0;
+                         this.log = '要做什么?';
+                     }, 900);
+                     return;
+                 }
                  this.turn = 0;
-                 this.log = "要做什么?";
+                 this.log = '要做什么?';
              });
         });
     }
 
     gainExp() {
         const exp = Math.floor(this.enemyPoke.exp * this.enemyPoke.level / 7);
-        this.log = `获得了 ${exp} 点经验值!`;
+        const money = Math.max(10, Math.floor(this.enemyPoke.level * 25 + this.enemyPoke.exp / 10));
+        this.game.player.money = (this.game.player.money || 0) + money;
+        this.log = `获得了 ${exp} 点经验值! 获得了 ¥${money}!`;
         this.playerPoke.exp += exp;
         
         setTimeout(() => {
