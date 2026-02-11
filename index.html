@@ -135,8 +135,13 @@ const Assets = {
     drawTile(ctx, tileId, x, y) {
         const img = this.tiles.get(tileId);
         if (img) {
-            ctx.drawImage(img, x, y, TILE_SIZE, TILE_SIZE);
-            return true;
+            try {
+                ctx.drawImage(img, x, y, TILE_SIZE, TILE_SIZE);
+                return true;
+            } catch (e) {
+                // If draw fails (e.g. img not fully loaded), fallback will run
+                return false;
+            }
         }
         return false;
     }
