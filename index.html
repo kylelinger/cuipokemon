@@ -78,7 +78,7 @@ const TILE_SIZE = 16;
 const SCREEN_WIDTH = 160;
 const SCREEN_HEIGHT = 144;
 const FPS = 60;
-const MOVE_SPEED = 2;
+const MOVE_SPEED = 1.6; // slowed by 20%
 
 const PALETTE = {
     white: "#e0f8cf",
@@ -1223,13 +1223,17 @@ class Game {
         }
 
         if (this.triggerBattleNext && !this.player.isMoving) {
-            this.triggerBattleNext = false;
-            this.gameState = STATES.BATTLE;
-            // Generate Random Enemy
-            const ids = ['rattata', 'pidgey', 'caterpie'];
-            const id = ids[Math.floor(Math.random() * ids.length)];
-            const lvl = Math.max(2, Math.floor(this.player.team[0].level - 1 + Math.random() * 3));
-            this.battle.start(createPokemon(id, lvl));
+            // Only trigger encounter if we're still on encounter tile (grass)
+            const onGrass = this.currentMap.data[this.player.gridY][this.player.gridX] === TILE.GRASS;
+            if (!onGrass) { this.triggerBattleNext = false; }
+            if (onGrass) {
+                this.triggerBattleNext = false;
+                this.gameState = STATES.BATTLE;
+                const ids = ['rattata', 'pidgey', 'caterpie'];
+                const id = ids[Math.floor(Math.random() * ids.length)];
+                const lvl = Math.max(2, Math.floor(this.player.team[0].level - 1 + Math.random() * 3));
+                this.battle.start(createPokemon(id, lvl));
+            }
         }
 
         this.updateCamera();
@@ -1245,6 +1249,8 @@ class Game {
     }
 
     switchMap(portal) {
+        // prevent cross-map encounter carry-over
+        this.triggerBattleNext = false;
         this.currentMapId = portal.target;
         this.currentMap = MAPS[portal.target];
         this.player.gridX = portal.targetX;
@@ -1596,7 +1602,7 @@ window.onload = async () => {
     ctx.fillText('Loading assets...', 30, 70);
 
     try { await Assets.preload(); } catch (e) { /* ignore, fallback sprites still work */ }
-    new Game();
+    window.__game = new Game();
 };
 
 </script>
