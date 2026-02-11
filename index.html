@@ -330,7 +330,8 @@ const MAPS = {
             { x: 14, y: 6, text: ["小心草丛！", "可能会有野生宝可梦。"], color: "#ff8888", sprite: "npc_boy" }
         ],
         signs: [
-            { x: 2, y: 9, text: ["PLAYER的家", "闲人免进"] }
+            { x: 2, y: 9, text: ["PLAYER的家", "闲人免进"] },
+            { x: 6, y: 12, text: ["公告板", "查看任务"], questBoard: true }
         ]
     },
     route: {
@@ -346,8 +347,8 @@ const MAPS = {
             [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
             [1,0,2,2,2,2,2,2,0,0,0,2,2,2,2,2,2,0,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 0,9 Exit West
-            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 0,10 Exit West
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3], // 0,9 Exit West
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3], // 0,10 Exit West
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,0,1],
             [1,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,0,1],
@@ -360,7 +361,9 @@ const MAPS = {
         ],
         portals: [
             { x: 0, y: 9, target: 'town', targetX: 18, targetY: 9 },
-            { x: 0, y: 10, target: 'town', targetX: 18, targetY: 10 }
+            { x: 0, y: 10, target: 'town', targetX: 18, targetY: 10 },
+            { x: 19, y: 9, target: 'town2', targetX: 1, targetY: 9 },
+            { x: 19, y: 10, target: 'town2', targetX: 1, targetY: 10 }
         ],
         npcs: [],
         signs: []
@@ -387,15 +390,156 @@ const MAPS = {
              { x: 5, y: 4, text: ["这是我的房子。", "虽然很小，但是很温馨。"], color: "#eeeeee", sprite: "npc_girl" }
         ],
         signs: []
-    }
+    },
+    town2: {
+        id: 'town2',
+        width: 20, height: 20,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 0,2 Route 2
+            [3,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1], // 0,3 Route 2
+            [1,0,0,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,4,4,4,1,0,1,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,4,4,4,1,0,1,0,0,0,0,0,0,0,0,0,1], // Shop
+            [1,0,0,1,4,4,4,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,1,3,1,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 9,0 From Route
+            [3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 10,0 From Route
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 0, y: 9, target: 'route', targetX: 18, targetY: 9 },
+            { x: 0, y: 10, target: 'route', targetX: 18, targetY: 10 },
+            { x: 5, y: 8, target: 'shop', targetX: 5, targetY: 7 }, // Shop Interior
+            { x: 0, y: 2, target: 'route2', targetX: 18, targetY: 9 }, // To Route 2
+            { x: 0, y: 3, target: 'route2', targetX: 18, targetY: 10 }
+        ],
+        npcs: [
+            { x: 10, y: 10, text: ["这是常青市。", "记得去商店看看！"], color: "#88ccff", sprite: "npc_boy" }
+        ],
+        signs: [
+            { x: 4, y: 8, text: ["友好商店", "欢迎光临！"] }
+        ]
+    },
+    shop: {
+        id: 'shop',
+        width: 10, height: 10,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1], // Counter
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,4,4,4,4,4,4,1,1],
+            [1,1,1,1,1,3,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 5, y: 8, target: 'town2', targetX: 5, targetY: 9 }
+        ],
+        npcs: [
+            { x: 5, y: 4, text: ["欢迎光临!", "想买点什么吗?"], color: "#eeeeee", sprite: "npc_boy", shop: true }
+        ],
+        signs: []
+    },
+    route2: {
+        id: 'route2',
+        width: 20, height: 20,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // North to Dungeon
+            [1,1,1,1,1,1,1,1,1,3,3,1,1,1,1,1,1,1,1,1], // 9,1 Dungeon Entry
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,1],
+            [1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,1],
+            [1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,1],
+            [1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3], // 19,9 Exit to Town2
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3], // 19,10
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,1],
+            [1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 19, y: 9, target: 'town2', targetX: 1, targetY: 2 },
+            { x: 19, y: 10, target: 'town2', targetX: 1, targetY: 3 },
+            { x: 9, y: 1, target: 'dungeon1', targetX: 10, targetY: 18 },
+            { x: 10, y: 1, target: 'dungeon1', targetX: 10, targetY: 18 }
+        ],
+        npcs: [],
+        signs: [{ x: 5, y: 5, text: ["前方危险：常青森林"] }]
+    },
+    dungeon1: {
+        id: 'dungeon1',
+        width: 20, height: 20,
+        data: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1], // Boss Room
+            [1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1],
+            [1,4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,1],
+            [1,4,4,1,0,0,0,0,0,0,0,0,0,0,0,0,1,4,4,1],
+            [1,4,4,1,0,1,1,1,1,1,1,1,1,1,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,4,4,4,4,4,4,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,1,1,1,1,1,1,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,1,0,0,0,0,1,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,1,0,1,1,0,1,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,1,0,1,1,0,1,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,1,0,0,0,0,1,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,1,1,1,1,1,1,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,4,4,4,4,4,4,4,4,1,0,1,4,4,1],
+            [1,4,4,1,0,1,1,1,1,1,1,1,1,1,1,0,1,4,4,1],
+            [1,4,4,1,0,0,0,0,0,0,0,0,0,0,0,0,1,4,4,1],
+            [1,4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,4,4,1],
+            [1,4,4,4,4,4,4,4,4,3,3,4,4,4,4,4,4,4,4,1], // 10,18 Entrance
+            [1,1,1,1,1,1,1,1,1,3,3,1,1,1,1,1,1,1,1,1]
+        ],
+        portals: [
+            { x: 9, y: 19, target: 'route2', targetX: 9, targetY: 2 },
+            { x: 10, y: 19, target: 'route2', targetX: 10, targetY: 2 }
+        ],
+        npcs: [
+            { x: 10, y: 3, text: ["吼！！！"], color: "#505050", sprite: "rattata", boss: true, bossId: 'onix' }
+        ],
+        signs: []
+    },
+
+const QUESTS = {
+    q1: { id: 'q1', title: '捕捉练习', desc: '捕捉一只小拉达。', type: 'catch', targetId: 'rattata', count: 1, reward: { money: 200, item: 'potion', amount: 1 } },
+    q2: { id: 'q2', title: '森林探险', desc: '捕捉一只绿毛虫。', type: 'catch', targetId: 'caterpie', count: 1, reward: { money: 300, item: 'ball', amount: 2 } },
+    q3: { id: 'q3', title: 'BOSS挑战', desc: '打败地牢的 Boss。', type: 'boss', targetId: 'onix', count: 1, reward: { money: 1000, item: 'potion', amount: 5 } }
 };
+
+const SHOP_ITEMS = [
+    { id: 'potion', price: 100 },
+    { id: 'ball', price: 200 }
+];
 
 // --- Game State Management ---
 const STATES = {
     OVERWORLD: 0,
     BATTLE: 1,
     DIALOGUE: 2,
-    MENU: 3
+    MENU: 3,
+    SHOP: 4
 };
 
 // --- Input Handling ---
@@ -440,7 +584,8 @@ const MONSTERS = {
     pikachu: { name: '皮卡丘', type: 'electric', hp: 35, atk: 55, def: 40, spd: 90, moves: ['thundershock', 'growl', 'tailwhip'], exp: 112 },
     rattata: { name: '小拉达', type: 'normal', hp: 30, atk: 56, def: 35, spd: 72, moves: ['tackle', 'tailwhip'], exp: 51 },
     pidgey: { name: '波波', type: 'flying', hp: 40, atk: 45, def: 40, spd: 56, moves: ['gust'], exp: 50 },
-    caterpie: { name: '绿毛虫', type: 'bug', hp: 45, atk: 30, def: 35, spd: 45, moves: ['tackle', 'stringshot'], exp: 39 }
+    caterpie: { name: '绿毛虫', type: 'bug', hp: 45, atk: 30, def: 35, spd: 45, moves: ['tackle', 'stringshot'], exp: 39 },
+    onix: { name: '大岩蛇', type: 'rock', hp: 35, atk: 45, def: 160, spd: 70, moves: ['tackle', 'screech', 'rockthrow'], exp: 108 }
 };
 
 const LEVEL_RATE = (level) => Math.pow(level, 3);
@@ -539,10 +684,12 @@ class BattleSystem {
         this.fightIndex = 0;
         this.bagIndex = 0;
         this.flash = 0;
+        this.isBoss = false;
     }
 
     start(enemy) {
         this.active = true;
+        this.isBoss = false;
         this.turn = 0;
         this.playerPoke = this.game.player.team[0];
         this.enemyPoke = enemy;
@@ -849,7 +996,8 @@ class Game {
         this.player = new Entity(10, 10);
         this.player.team = [createPokemon('pikachu', 5)];
         this.player.bag = { potion: 1 };
-        this.player.quest = { active: false, completed: false };
+        this.player.money = 500;
+        this.player.quests = { active: [], completed: [] }; // Stores quest IDs
 
         this.pikachu = new Entity(10, 11, true);
         this.pikachu.direction = 1; 
@@ -857,6 +1005,10 @@ class Game {
         this.gameState = STATES.OVERWORLD;
         this.battle = new BattleSystem(this, (won) => { 
             this.gameState = STATES.OVERWORLD; 
+            if (won && this.battle.isBoss) {
+                this.player.quests.bossDefeated = true;
+                this.showDialogue(["BOSS被击败了!", "任务进度已更新。"]);
+            }
         });
 
         // Dialogue
@@ -901,7 +1053,8 @@ class Game {
             
             if (data.team) this.player.team = data.team;
             if (data.bag) this.player.bag = data.bag;
-            if (data.quest) this.player.quest = data.quest;
+            if (data.quests) this.player.quests = data.quests;
+            if (data.money) this.player.money = data.money;
 
             // Reset pikachu
             this.pikachu.x = this.player.x;
@@ -920,7 +1073,8 @@ class Game {
             y: this.player.y,
             team: this.player.team,
             bag: this.player.bag,
-            quest: this.player.quest
+            quests: this.player.quests,
+            money: this.player.money
         };
         localStorage.setItem('pokemon_canvas_save', JSON.stringify(data));
         this.showDialogue(["游戏已保存。"]);
@@ -1059,32 +1213,65 @@ class Game {
         // Check NPCs
         const npc = this.currentMap.npcs.find(n => n.x === tx && n.y === ty);
         if (npc) {
-            // Quest NPC logic (Hardcoded for Demo)
-            if (this.currentMapId === 'town' && npc.x === 8 && npc.y === 12) {
-                if (this.player.quest.completed) {
-                     this.showDialogue(["Demo Completed!", "谢谢你的帮助!"]);
-                } else if (this.player.quest.active) {
-                     if (this.player.team.length > 1) { // Caught something (Assuming start with 1)
-                         this.player.quest.completed = true;
-                         this.player.bag.potion = (this.player.bag.potion || 0) + 2;
-                         this.showDialogue(["太棒了! 你抓到了宝可梦!", "这是给你的奖励: 伤药 x2。", "Demo Completed!"]);
-                     } else {
-                         this.showDialogue(["去 Route 抓一只宝可梦回来吧!", "记得先削弱它再扔球。"]);
-                     }
+            if (npc.boss) {
+                if (this.player.quests.bossDefeated) {
+                    this.showDialogue(["(大岩蛇已经倒下了)"]);
                 } else {
-                     this.player.quest.active = true;
-                     this.player.bag.ball = (this.player.bag.ball || 0) + 3;
-                     this.showDialogue(["你好! 我有个任务给你。", "给你 3 个精灵球。", "去 Route 抓一只宝可梦回来吧!", "获得的物品已放入背包。"]);
+                    this.showDialogue(["吼！！！"]);
+                    setTimeout(() => {
+                        this.gameState = STATES.BATTLE;
+                        this.battle.isBoss = true;
+                        this.battle.start(createPokemon('onix', 10));
+                    }, 1000);
                 }
-            } else {
-                this.showDialogue(npc.text);
+                return;
             }
+            if (npc.shop) {
+                this.gameState = STATES.MENU; // Use Menu state for simplicity, or create custom SHOP state
+                this.menuState = 4; // 4: Shop
+                this.menuIndex = 0;
+                return;
+            }
+            this.showDialogue(npc.text);
             return;
         }
 
         // Check Signs
         const sign = this.currentMap.signs.find(s => s.x === tx && s.y === ty);
         if (sign) {
+            if (sign.text[0] === "公告板") {
+                 const qId = Object.keys(QUESTS).find(id => !this.player.quests.completed.includes(id));
+                 if (!qId) {
+                     this.showDialogue(["所有任务已完成！"]);
+                     return;
+                 }
+                 const q = QUESTS[qId];
+                 const isActive = this.player.quests.active.includes(qId);
+                 
+                 if (isActive) {
+                     let done = false;
+                     if (q.type === 'catch') {
+                         const count = this.player.team.filter(p => p.id === q.targetId).length;
+                         if (count >= q.count) done = true;
+                     } else if (q.type === 'boss') {
+                         if (this.player.quests.bossDefeated) done = true;
+                     }
+
+                     if (done) {
+                         this.player.quests.active = this.player.quests.active.filter(id => id !== qId);
+                         this.player.quests.completed.push(qId);
+                         this.player.money += q.reward.money;
+                         if (q.reward.item) this.player.bag[q.reward.item] = (this.player.bag[q.reward.item] || 0) + q.reward.amount;
+                         this.showDialogue([`完成任务: ${q.title}!`, `获得 ¥${q.reward.money}`]);
+                     } else {
+                         this.showDialogue([`进行中: ${q.title}`, q.desc]);
+                     }
+                 } else {
+                     this.player.quests.active.push(qId);
+                     this.showDialogue([`接受任务: ${q.title}`, q.desc]);
+                 }
+                 return;
+            }
             this.showDialogue(sign.text);
             return;
         }
@@ -1150,6 +1337,19 @@ class Game {
                     this.menuState = 2; // Show Bag
                 }
             }
+        } else if (this.menuState === 4) { // Shop
+             if (Input.isJustPressed(KEYS.B)) this.gameState = STATES.OVERWORLD;
+             if (Input.isJustPressed(KEYS.UP)) this.menuIndex = Math.max(0, this.menuIndex - 1);
+             if (Input.isJustPressed(KEYS.DOWN)) this.menuIndex = Math.min(SHOP_ITEMS.length - 1, this.menuIndex + 1);
+             
+             if (Input.isJustPressed(KEYS.A)) {
+                 const itemData = SHOP_ITEMS[this.menuIndex];
+                 if (this.player.money >= itemData.price) {
+                     this.player.money -= itemData.price;
+                     this.player.bag[itemData.id] = (this.player.bag[itemData.id] || 0) + 1;
+                     // Optional: Feedback sound or visual
+                 }
+             }
         } else {
              if (Input.isJustPressed(KEYS.B)) this.menuState = 0;
         }
@@ -1256,8 +1456,8 @@ class Game {
 
     drawMenu() {
         if (this.menuState === 0) {
-            const boxW = 60;
-            const boxH = this.menuOptions.length * 12 + 10;
+            const boxW = 80;
+            const boxH = this.menuOptions.length * 12 + 25;
             const startX = SCREEN_WIDTH - boxW - 2;
             const startY = 2;
 
@@ -1274,6 +1474,10 @@ class Game {
             });
 
             this.ctx.fillText(">", startX + 5, startY + 12 + (this.menuIndex * 12));
+            
+            // Draw Money
+            this.ctx.fillStyle = "#306850";
+            this.ctx.fillText(`¥${this.player.money}`, startX + 5, startY + boxH - 5);
         } else if (this.menuState === 1) { // Team
             this.ctx.fillStyle = PALETTE.white;
             this.ctx.fillRect(10, 10, 140, 120);
@@ -1299,6 +1503,20 @@ class Game {
                      this.ctx.fillText(`${item.name} x${this.player.bag[id]}`, 15, 40 + i * 15);
                  });
              }
+        } else if (this.menuState === 4) { // Shop
+            this.ctx.fillStyle = PALETTE.white;
+            this.ctx.fillRect(10, 10, 140, 120);
+            this.ctx.strokeRect(10, 10, 140, 120);
+            this.ctx.fillStyle = PALETTE.black;
+            this.ctx.fillText("商店 (按X离开)", 15, 25);
+            this.ctx.fillText(`¥${this.player.money}`, 100, 25);
+
+            SHOP_ITEMS.forEach((itemData, i) => {
+                const name = ITEMS[itemData.id].name;
+                this.ctx.fillText(`${name}`, 25, 45 + i * 15);
+                this.ctx.fillText(`¥${itemData.price}`, 100, 45 + i * 15);
+                if (i === this.menuIndex) this.ctx.fillText(">", 15, 45 + i * 15);
+            });
         }
     }
 }
