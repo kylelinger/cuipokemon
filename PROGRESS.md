@@ -20,9 +20,9 @@
 - Visual upgrade: CC0 Kenney Tiny Town tile loader + loading screen
 
 ### In Progress (next)
-- Upgrade battle depth + more monsters/moves
 - Visual upgrade phase 2: replace character sprites with CC0 Q-style sprites
-- Boss fight mechanics
+- Polish battle UX (more animations, move descriptions, better pacing)
+- Add more quests + dungeon progression
 
 ## Changelog
 ### 2026-02-10
@@ -30,6 +30,7 @@
 - Added Shop system (buy items) and Money.
 - Added Quest Board system.
 - Bugfix: restored JS execution by properly closing the `MAPS` object (was causing green-screen).
+- Battle: completed wild/boss battle loop (missing boss moves, status tick damage, paralysis check, burn atk reduction, money rewards).
 - Deployed NPC sprite fix + z-order + sign collision.
 - Deployed CC0 Kenney Tiny Town overworld tiles (preload + loading).
 - Added PROGRESS.md (this file) and committed to repo.
