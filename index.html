@@ -2483,9 +2483,9 @@ class Game {
                 
                 const t = map.data[y][x];
 
-                // Prefer CC0 tiles if loaded; fall back to procedural sprites.
-                const drew = Assets.loaded && Assets.drawTile(this.ctx, t, px, py);
-                if (drew) continue;
+                // Use procedural high-detail sprites (CC0 tiles disabled)
+                // const drew = Assets.loaded && Assets.drawTile(this.ctx, t, px, py);
+                // if (drew) continue;
 
                 if (t === TILE.WALL) Sprites.wall(this.ctx, px, py);
                 else if (t === TILE.GRASS) {
