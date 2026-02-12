@@ -1375,7 +1375,7 @@ const Sprites = {
 // --- Map Data ---
 const MAPS = {
     town: {
-        id: 'town',
+        id: 'town', name: '真新镇',
         width: 20, height: 20,
         data: [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -1414,7 +1414,7 @@ const MAPS = {
         ]
     },
     route: {
-        id: 'route',
+        id: 'route', name: '1号路',
         width: 20, height: 20,
         data: [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -1448,7 +1448,7 @@ const MAPS = {
         signs: []
     },
     house: {
-        id: 'house',
+        id: 'house', name: '小屋',
         width: 10, height: 10,
         data: [
             [1,1,1,1,1,1,1,1,1,1],
@@ -1471,7 +1471,7 @@ const MAPS = {
         signs: []
     },
     town2: {
-        id: 'town2',
+        id: 'town2', name: '常青市',
         width: 20, height: 20,
         data: [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -1510,7 +1510,7 @@ const MAPS = {
         ]
     },
     shop: {
-        id: 'shop',
+        id: 'shop', name: '商店',
         width: 10, height: 10,
         data: [
             [1,1,1,1,1,1,1,1,1,1],
@@ -1533,7 +1533,7 @@ const MAPS = {
         signs: []
     },
     route2: {
-        id: 'route2',
+        id: 'route2', name: '2号路',
         width: 20, height: 20,
         data: [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // North to Dungeon
@@ -1567,7 +1567,7 @@ const MAPS = {
         signs: [{ x: 5, y: 5, text: ["前方危险：常青森林"] }]
     },
     dungeon1: {
-        id: 'dungeon1',
+        id: 'dungeon1', name: '地牢',
         width: 20, height: 20,
         data: [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -2721,6 +2721,18 @@ class Game {
         renderList.forEach(r => r.draw());
 
         this.ctx.restore();
+
+        // Map name (top-right)
+        if (this.currentMap.name) {
+            const ctx = this.ctx;
+            const name = this.currentMap.name;
+            ctx.font = '10px monospace';
+            const tw = ctx.measureText(name).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(SCREEN_WIDTH - tw - 12, 2, tw + 8, 16);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(name, SCREEN_WIDTH - tw - 8, 14);
+        }
 
         // UI Layer
         if (this.gameState === STATES.DIALOGUE) this.drawDialogue();
