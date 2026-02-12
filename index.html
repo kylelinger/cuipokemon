@@ -1760,13 +1760,14 @@ class BattleSystem {
         this.game = game;
         this.onExit = onExit;
         this.active = false;
-        this.turn = 0; // 0:Menu, 1:Moves, 2:Bag, 3:Target, 4:Execute, 5:End
+        this.turn = 0; // 0:Menu, 1:Moves, 2:Bag, 3:Target, 4:Execute, 5:End, 6:SwitchPoke
         this.log = "";
         this.playerPoke = null;
         this.enemyPoke = null;
         this.menuIndex = 0;
         this.fightIndex = 0;
         this.bagIndex = 0;
+        this.switchIndex = 0;
         this.flash = 0;
         this.isBoss = false;
     }
@@ -1793,7 +1794,7 @@ class BattleSystem {
             if (Input.isJustPressed(KEYS.A)) {
                 if (this.menuIndex === 0) { this.turn = 1; this.fightIndex = 0; }
                 else if (this.menuIndex === 1) { this.turn = 2; this.bagIndex = 0; }
-                else if (this.menuIndex === 2) { this.log = "还不能换人!"; }
+                else if (this.menuIndex === 2) { this.turn = 6; this.switchIndex = 0; }
                 else { // Run
                     if (Math.random() > 0.5 || this.playerPoke.spd > this.enemyPoke.spd) {
                          this.log = "成功逃跑!";
@@ -1831,6 +1832,41 @@ class BattleSystem {
             if (Input.isJustPressed(KEYS.A)) {
                 const itemId = items[this.bagIndex];
                 this.useItem(itemId);
+            }
+        }
+        else if (this.turn === 6) { // Switch Pokemon
+            const team = this.game.player.team;
+            const alive = team.filter(p => p.hp > 0 && p !== this.playerPoke);
+            if (alive.length === 0) {
+                if (this.playerPoke.hp <= 0) {
+                    this.log = "眼前一黑...";
+                    this.turn = 5;
+                    setTimeout(() => this.exitBattle(), 1000);
+                } else {
+                    this.log = "没有其他精灵可以换!";
+                    this.turn = 0;
+                }
+                return;
+            }
+            if (Input.isJustPressed(KEYS.DOWN)) this.switchIndex = Math.min(this.switchIndex + 1, team.length - 1);
+            if (Input.isJustPressed(KEYS.UP)) this.switchIndex = Math.max(this.switchIndex - 1, 0);
+            // Only allow cancel if current Pokemon is still alive
+            if (Input.isJustPressed(KEYS.B) && this.playerPoke.hp > 0) this.turn = 0;
+            if (Input.isJustPressed(KEYS.A)) {
+                const target = team[this.switchIndex];
+                const currentIdx = team.indexOf(this.playerPoke);
+                if (this.switchIndex === currentIdx) {
+                    this.log = "已经在战斗中了!";
+                } else if (target.hp <= 0) {
+                    this.log = "这只精灵已经倒下了!";
+                } else {
+                    // Swap to front
+                    const newIdx = this.switchIndex;
+                    [team[0], team[newIdx]] = [team[newIdx], team[0]];
+                    this.playerPoke = team[0];
+                    this.log = `去吧, ${this.playerPoke.name}!`;
+                    this.executeTurn(null); // Enemy attacks
+                }
             }
         }
     }
@@ -1967,10 +2003,20 @@ class BattleSystem {
                     if (defender === this.enemyPoke) {
                         setTimeout(() => this.gainExp(), 1000);
                     } else {
-                        setTimeout(() => {
-                            this.log = "眼前一黑...";
-                            setTimeout(() => this.exitBattle(), 1000);
-                        }, 1000);
+                        // Check if player has other alive Pokemon
+                        const alive = this.game.player.team.filter(p => p.hp > 0);
+                        if (alive.length === 0) {
+                            setTimeout(() => {
+                                this.log = "眼前一黑...";
+                                setTimeout(() => this.exitBattle(), 1000);
+                            }, 1000);
+                        } else {
+                            setTimeout(() => {
+                                this.log = "选择下一只精灵!";
+                                this.turn = 6;
+                                this.switchIndex = 0;
+                            }, 1000);
+                        }
                     }
                 } else {
                     setTimeout(next, 1000);
@@ -1985,7 +2031,12 @@ class BattleSystem {
                  if (msgs.length) {
                      this.log = msgs[0];
                      if (this.playerPoke.hp <= 0) {
-                         setTimeout(() => { this.log = '眼前一黑...'; setTimeout(() => this.exitBattle(), 900); }, 900);
+                         const alive = this.game.player.team.filter(p => p.hp > 0);
+                         if (alive.length === 0) {
+                             setTimeout(() => { this.log = '眼前一黑...'; setTimeout(() => this.exitBattle(), 900); }, 900);
+                         } else {
+                             setTimeout(() => { this.log = '选择下一只精灵!'; this.turn = 6; this.switchIndex = 0; }, 900);
+                         }
                          return;
                      }
                      if (this.enemyPoke.hp <= 0) {
@@ -2103,6 +2154,21 @@ class BattleSystem {
                  });
                  ctx.fillText(">", 16, 230 + (this.bagIndex * 16));
              }
+        } else if (this.turn === 6) { // Switch Pokemon
+             const team = this.game.player.team;
+             const currentIdx = team.indexOf(this.playerPoke);
+             ctx.fillText("选择精灵 (X返回)", 14, 222);
+             const maxShow = Math.min(team.length, 4);
+             const scrollOff = this.switchIndex >= maxShow ? this.switchIndex - maxShow + 1 : 0;
+             for (let i = scrollOff; i < Math.min(team.length, scrollOff + 4); i++) {
+                 const p = team[i];
+                 const row = i - scrollOff;
+                 const label = i === currentIdx ? `${p.name} Lv${p.level} ${p.hp}/${p.maxHp} [出战]` :
+                               p.hp <= 0 ? `${p.name} Lv${p.level} 倒下` :
+                               `${p.name} Lv${p.level} ${p.hp}/${p.maxHp}`;
+                 ctx.fillText(label, 30, 238 + row * 16);
+                 if (i === this.switchIndex) ctx.fillText(">", 16, 238 + row * 16);
+             }
         } else {
              ctx.fillText(this.log, 14, 236);
         }
@@ -2170,7 +2236,14 @@ class Game {
         // Menu
         this.menuOptions = ["队伍", "背包", "保存", "关闭"];
         this.menuIndex = 0;
-        this.menuState = 0; // 0: Main, 1: Submenu
+        this.menuState = 0; // 0: Main, 1: Team, 2: Bag, 3: BagTarget, 4: Shop
+        this.teamIndex = 0;
+        this.teamSwapFrom = -1;
+        this.bagMenuIndex = 0;
+        this.bagTargetIndex = 0;
+        this.bagUseItemId = null;
+        this.menuMsg = "";
+        this.menuMsgTimer = 0;
 
         // Camera
         this.camX = 0;
@@ -2477,7 +2550,7 @@ class Game {
             }
             if (Input.isJustPressed(KEYS.UP)) this.menuIndex = Math.max(0, this.menuIndex - 1);
             if (Input.isJustPressed(KEYS.DOWN)) this.menuIndex = Math.min(this.menuOptions.length - 1, this.menuIndex + 1);
-            
+
             if (Input.isJustPressed(KEYS.A)) {
                 const selection = this.menuOptions[this.menuIndex];
                 if (selection === "关闭") this.gameState = STATES.OVERWORLD;
@@ -2485,28 +2558,91 @@ class Game {
                     this.saveGame();
                 }
                 else if (selection === "队伍") {
-                    this.menuState = 1; // Show Team
+                    this.menuState = 1;
+                    this.teamIndex = 0;
+                    this.teamSwapFrom = -1; // -1 = not swapping
                 }
                 else if (selection === "背包") {
-                    this.menuState = 2; // Show Bag
+                    this.menuState = 2;
+                    this.bagMenuIndex = 0;
+                }
+            }
+        } else if (this.menuState === 1) { // Team
+            if (Input.isJustPressed(KEYS.B)) {
+                this.teamSwapFrom = -1;
+                this.menuState = 0;
+            }
+            if (Input.isJustPressed(KEYS.UP)) this.teamIndex = Math.max(0, this.teamIndex - 1);
+            if (Input.isJustPressed(KEYS.DOWN)) this.teamIndex = Math.min(this.player.team.length - 1, this.teamIndex + 1);
+            if (Input.isJustPressed(KEYS.A)) {
+                if (this.teamSwapFrom === -1) {
+                    this.teamSwapFrom = this.teamIndex;
+                } else {
+                    if (this.teamSwapFrom !== this.teamIndex) {
+                        const t = this.player.team;
+                        [t[this.teamSwapFrom], t[this.teamIndex]] = [t[this.teamIndex], t[this.teamSwapFrom]];
+                    }
+                    this.teamSwapFrom = -1;
+                }
+            }
+        } else if (this.menuState === 2) { // Bag
+            const items = Object.keys(this.player.bag);
+            if (Input.isJustPressed(KEYS.B)) this.menuState = 0;
+            if (items.length > 0) {
+                if (Input.isJustPressed(KEYS.UP)) this.bagMenuIndex = Math.max(0, this.bagMenuIndex - 1);
+                if (Input.isJustPressed(KEYS.DOWN)) this.bagMenuIndex = Math.min(items.length - 1, this.bagMenuIndex + 1);
+                if (Input.isJustPressed(KEYS.A)) {
+                    const itemId = items[this.bagMenuIndex];
+                    const item = ITEMS[itemId];
+                    if (item.type === 'heal') {
+                        this.menuState = 3; // Select target Pokemon
+                        this.bagTargetIndex = 0;
+                        this.bagUseItemId = itemId;
+                    }
+                }
+            }
+        } else if (this.menuState === 3) { // Bag -> Select target Pokemon
+            if (Input.isJustPressed(KEYS.B)) this.menuState = 2;
+            if (Input.isJustPressed(KEYS.UP)) this.bagTargetIndex = Math.max(0, this.bagTargetIndex - 1);
+            if (Input.isJustPressed(KEYS.DOWN)) this.bagTargetIndex = Math.min(this.player.team.length - 1, this.bagTargetIndex + 1);
+            if (Input.isJustPressed(KEYS.A)) {
+                const target = this.player.team[this.bagTargetIndex];
+                const item = ITEMS[this.bagUseItemId];
+                if (target.hp <= 0) {
+                    this.menuMsg = "这只精灵已经倒下了!";
+                    this.menuMsgTimer = 60;
+                } else if (target.hp >= target.maxHp) {
+                    this.menuMsg = "HP已经满了!";
+                    this.menuMsgTimer = 60;
+                } else {
+                    this.player.bag[this.bagUseItemId]--;
+                    if (this.player.bag[this.bagUseItemId] <= 0) delete this.player.bag[this.bagUseItemId];
+                    const oldHp = target.hp;
+                    target.hp = Math.min(target.maxHp, target.hp + item.value);
+                    this.menuMsg = `${target.name} 回复了 ${target.hp - oldHp} HP!`;
+                    this.menuMsgTimer = 60;
+                    this.menuState = 2;
+                    // Re-clamp bagMenuIndex
+                    const remaining = Object.keys(this.player.bag).length;
+                    if (remaining === 0) this.bagMenuIndex = 0;
+                    else if (this.bagMenuIndex >= remaining) this.bagMenuIndex = remaining - 1;
                 }
             }
         } else if (this.menuState === 4) { // Shop
              if (Input.isJustPressed(KEYS.B)) this.gameState = STATES.OVERWORLD;
              if (Input.isJustPressed(KEYS.UP)) this.menuIndex = Math.max(0, this.menuIndex - 1);
              if (Input.isJustPressed(KEYS.DOWN)) this.menuIndex = Math.min(SHOP_ITEMS.length - 1, this.menuIndex + 1);
-             
+
              if (Input.isJustPressed(KEYS.A)) {
                  const itemData = SHOP_ITEMS[this.menuIndex];
                  if (this.player.money >= itemData.price) {
                      this.player.money -= itemData.price;
                      this.player.bag[itemData.id] = (this.player.bag[itemData.id] || 0) + 1;
-                     // Optional: Feedback sound or visual
                  }
              }
-        } else {
-             if (Input.isJustPressed(KEYS.B)) this.menuState = 0;
         }
+        // Tick message timer
+        if (this.menuMsgTimer > 0) this.menuMsgTimer--;
     }
 
     draw() {
@@ -2634,29 +2770,91 @@ class Game {
             this.ctx.fillText(`¥${this.player.money}`, startX + 10, startY + boxH - 8);
         } else if (this.menuState === 1) { // Team
             this.ctx.fillStyle = PALETTE.white;
-            this.ctx.fillRect(20, 20, 280, 240);
-            this.ctx.strokeRect(20, 20, 280, 240);
+            this.ctx.fillRect(10, 10, 300, 268);
+            this.ctx.strokeStyle = PALETTE.black;
+            this.ctx.strokeRect(10, 10, 300, 268);
             this.ctx.fillStyle = PALETTE.black;
-            this.ctx.fillText("队伍 (按X返回)", 30, 44);
+            this.ctx.fillText("队伍 (Z选/换 X返回)", 20, 30);
 
             this.player.team.forEach((poke, i) => {
-                 this.ctx.fillText(`${poke.name} Lv${poke.level} ${poke.hp}/${poke.maxHp}`, 30, 70 + i * 24);
+                const y = 46 + i * 36;
+                // Highlight selected for swap
+                if (this.teamSwapFrom === i) {
+                    this.ctx.fillStyle = '#c8e0c0';
+                    this.ctx.fillRect(18, y - 12, 280, 34);
+                    this.ctx.fillStyle = PALETTE.black;
+                }
+                // Cursor
+                if (i === this.teamIndex) this.ctx.fillText(">", 20, y);
+                // Name, level, type
+                const typeLabel = poke.type || '';
+                this.ctx.fillText(`${poke.name} Lv${poke.level}`, 34, y);
+                this.ctx.fillStyle = '#555';
+                this.ctx.fillText(`[${typeLabel}]`, 180, y);
+                this.ctx.fillStyle = PALETTE.black;
+                // HP bar
+                const barX = 34, barW = 100, barH = 6, barY = y + 6;
+                this.ctx.strokeRect(barX, barY, barW, barH);
+                const pct = poke.hp / poke.maxHp;
+                this.ctx.fillStyle = pct > 0.5 ? "#50C050" : pct > 0.2 ? "#F0C030" : "#F04040";
+                this.ctx.fillRect(barX + 1, barY + 1, Math.max(0, (barW - 2) * pct), barH - 2);
+                this.ctx.fillStyle = PALETTE.black;
+                this.ctx.fillText(`${poke.hp}/${poke.maxHp}`, barX + barW + 8, y + 10);
+                if (poke.status) this.ctx.fillText(poke.status.toUpperCase(), 240, y + 10);
             });
+            if (this.teamSwapFrom >= 0) {
+                this.ctx.fillStyle = '#555';
+                this.ctx.fillText("选择要交换的精灵", 20, 268);
+                this.ctx.fillStyle = PALETTE.black;
+            }
         } else if (this.menuState === 2) { // Bag
             this.ctx.fillStyle = PALETTE.white;
-            this.ctx.fillRect(20, 20, 280, 240);
-            this.ctx.strokeRect(20, 20, 280, 240);
+            this.ctx.fillRect(10, 10, 300, 268);
+            this.ctx.strokeStyle = PALETTE.black;
+            this.ctx.strokeRect(10, 10, 300, 268);
             this.ctx.fillStyle = PALETTE.black;
-            this.ctx.fillText("背包 (按X返回)", 30, 44);
+            this.ctx.fillText("背包 (Z使用 X返回)", 20, 30);
 
             const items = Object.keys(this.player.bag);
-             if (items.length === 0) this.ctx.fillText("背包是空的", 30, 70);
-             else {
-                 items.forEach((id, i) => {
-                     const item = ITEMS[id];
-                     this.ctx.fillText(`${item.name} x${this.player.bag[id]}`, 30, 70 + i * 24);
-                 });
-             }
+            if (items.length === 0) {
+                this.ctx.fillText("背包是空的", 30, 60);
+            } else {
+                items.forEach((id, i) => {
+                    const item = ITEMS[id];
+                    const y = 54 + i * 28;
+                    if (i === this.bagMenuIndex) this.ctx.fillText(">", 20, y);
+                    this.ctx.fillText(`${item.name} x${this.player.bag[id]}`, 34, y);
+                    this.ctx.fillStyle = '#555';
+                    this.ctx.fillText(item.desc, 34, y + 14);
+                    this.ctx.fillStyle = PALETTE.black;
+                });
+            }
+            // Show menu message
+            if (this.menuMsgTimer > 0 && this.menuMsg) {
+                this.ctx.fillStyle = '#306850';
+                this.ctx.fillText(this.menuMsg, 20, 268);
+                this.ctx.fillStyle = PALETTE.black;
+            }
+        } else if (this.menuState === 3) { // Bag -> Select target
+            this.ctx.fillStyle = PALETTE.white;
+            this.ctx.fillRect(10, 10, 300, 268);
+            this.ctx.strokeStyle = PALETTE.black;
+            this.ctx.strokeRect(10, 10, 300, 268);
+            this.ctx.fillStyle = PALETTE.black;
+            this.ctx.fillText("选择目标精灵 (X返回)", 20, 30);
+
+            this.player.team.forEach((poke, i) => {
+                const y = 54 + i * 28;
+                if (i === this.bagTargetIndex) this.ctx.fillText(">", 20, y);
+                const label = poke.hp <= 0 ? `${poke.name} Lv${poke.level} 倒下` :
+                              `${poke.name} Lv${poke.level} ${poke.hp}/${poke.maxHp}`;
+                this.ctx.fillText(label, 34, y);
+            });
+            if (this.menuMsgTimer > 0 && this.menuMsg) {
+                this.ctx.fillStyle = '#c03030';
+                this.ctx.fillText(this.menuMsg, 20, 268);
+                this.ctx.fillStyle = PALETTE.black;
+            }
         } else if (this.menuState === 4) { // Shop
             this.ctx.fillStyle = PALETTE.white;
             this.ctx.fillRect(20, 20, 280, 240);
