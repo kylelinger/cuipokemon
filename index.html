@@ -1737,7 +1737,7 @@ class Entity {
         
         // Wall Collision
         const tile = map.data[nextGridY][nextGridX];
-        if (tile === TILE.WALL || tile === TILE.SIGN) return false;
+        if (tile === TILE.WALL || tile === TILE.SIGN) { console.log('BLOCKED:', nextGridX, nextGridY, 'tile=', tile); return false; }
 
         // NPC Collision
         if (map.npcs.some(npc => npc.x === nextGridX && npc.y === nextGridY)) return false;
@@ -2377,7 +2377,7 @@ class Game {
         // Portal Check
         if (!this.player.isMoving && !this.triggerBattleNext) {
             const portal = this.currentMap.portals.find(p => p.x === this.player.gridX && p.y === this.player.gridY);
-            if (portal) this.switchMap(portal);
+            if (portal) { console.log('PORTAL HIT:', this.currentMapId, '->', portal.target, 'from', this.player.gridX, this.player.gridY); this.switchMap(portal); }
         }
 
         if (this.triggerBattleNext && !this.player.isMoving) {
