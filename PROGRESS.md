@@ -20,7 +20,7 @@
 - Visual upgrade: CC0 Kenney Tiny Town tile loader + loading screen
 
 ### In Progress (next)
-- Visual upgrade: replace character/monster sprites with generated cartoon pixel sprites (no external assets)
+- ~~Visual upgrade: replace character/monster sprites with generated cartoon pixel sprites (no external assets)~~ ✅ Done
 - Polish battle UX (more animations, move descriptions, better pacing)
 - Add more quests + dungeon progression
 
@@ -35,6 +35,16 @@
 - Deployed NPC sprite fix + z-order + sign collision.
 - Deployed CC0 Kenney Tiny Town overworld tiles (preload + loading).
 - Added PROGRESS.md (this file) and committed to repo.
+
+### 2026-02-12
+- Upgraded all sprites to detailed cartoon pixel art with animations:
+  - Player: red cap trainer with blue jacket, belt, backpack, walk animation
+  - Pikachu: detailed with ears, tail, cheeks, bounce animation
+  - NPC boy/girl/generic: detailed with hair, clothes, accessories
+  - Battle sprites: rattata, pidgey, caterpie, onix (all with detail)
+  - Pikachu back sprite upgraded
+  - Battle rendering now uses all enemy sprites dynamically (not just rattata)
+  - Improved tile sprites (grass, wall, floor, door, sign)
 
 ## Next Tasks (planned)
 1. Add Town2/Route2 with new quests
