@@ -2078,7 +2078,7 @@ class BattleSystem {
         }, 1000);
     }
 
-    exitBattle(won = false) { this.active = false; this.onExit(won); }
+    exitBattle(won = false) { this.active = false; this.onExit(won); this.game.autoSave(); }
 
     draw(ctx) {
         ctx.fillStyle = PALETTE.white;
@@ -2298,7 +2298,20 @@ class Game {
             money: this.player.money
         };
         localStorage.setItem('pokemon_canvas_save', JSON.stringify(data));
-        this.showDialogue(["游戏已保存。"]);
+        if (!silent) this.showDialogue(["游戏已保存。"]);
+    }
+
+    autoSave() {
+        const data = {
+            mapId: this.currentMapId,
+            x: this.player.x,
+            y: this.player.y,
+            team: this.player.team,
+            bag: this.player.bag,
+            quests: this.player.quests,
+            money: this.player.money
+        };
+        localStorage.setItem('pokemon_canvas_save', JSON.stringify(data));
     }
 
     loop(timestamp) {
@@ -2426,6 +2439,9 @@ class Game {
         this.pikachu.targetX = this.pikachu.x;
         this.pikachu.targetY = this.pikachu.y;
         this.pikachu.isMoving = false;
+
+        // Auto-save on map change
+        this.autoSave();
         
         this.camX = this.player.x - SCREEN_WIDTH/2; 
         this.camY = this.player.y - SCREEN_HEIGHT/2;
